@@ -1,0 +1,2 @@
+const kUnsplashAccessKey = 'your_access_key_here';
+const kUnsplashSecretKey = 'your_secret_key_here';
