@@ -46,6 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool hasSearched = false;
   String imageSearch = '';
   var appCredentials;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -120,6 +121,7 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               TextField(
+                controller: _searchController,
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 20.0,
@@ -172,6 +174,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   const SizedBox(width: 40),
                   ElevatedButton(
                     onPressed: () {
+                      _searchController.clear();
                       getRandomImage();
                     },
                     child: const Text(
@@ -207,9 +210,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   String url = listImages[index].toString();
                                   var response = await http.get(Uri.parse(url));
                                   Directory docDir =
+                                      (await getDownloadsDirectory()) ??
                                       await getApplicationDocumentsDirectory();
-                                  File file = File(path.join(docDir.path,
-                                      path.basename(path.basename(url))));
+                                  String fileName = path.basename(Uri.parse(url).path);
+                                  File file = File(path.join(docDir.path, '$fileName.jpg'));
                                   await file.writeAsBytes(response.bodyBytes);
                                   // ignore: use_build_context_synchronously
                                   showDialog(
