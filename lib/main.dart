@@ -129,6 +129,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 decoration: InputDecoration(
                   suffixIcon: IconButton(
                     onPressed: () async {
+                      if (_searchController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Enter search text')),
+                        );
+                        return;
+                      }
                       setState(() {
                         // isLoading = true;
                       });
@@ -161,6 +167,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
+                      if (_searchController.text.trim().isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Enter search text')),
+                        );
+                        return;
+                      }
                       getSearchImage();
                     },
                     child: const Text(
@@ -215,6 +227,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   String fileName = path.basename(Uri.parse(url).path);
                                   File file = File(path.join(docDir.path, '$fileName.jpg'));
                                   await file.writeAsBytes(response.bodyBytes);
+                                  // ignore: use_build_context_synchronously
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Image saved in the Downloads folder')),
+                                  );
                                   // ignore: use_build_context_synchronously
                                   showDialog(
                                       context: context,
