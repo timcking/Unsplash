@@ -1,6 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:unsplash_client/unsplash_client.dart';
 import 'package:unsplash/constants.dart';
 import 'package:unsplash/config.dart';
 import 'package:path_provider/path_provider.dart';
@@ -45,69 +45,53 @@ class _MyHomePageState extends State<MyHomePage> {
   List listImages = [];
   bool hasSearched = false;
   String imageSearch = '';
-  var appCredentials;
   final TextEditingController _searchController = TextEditingController();
 
-  @override
-  void initState() {
-    super.initState();
-
-    appCredentials = loadAppCredentials();
-  }
+  // Unsplash API requests authenticate via the access key as a Client-ID.
+  Map<String, String> get _authHeaders =>
+      {'Authorization': 'Client-ID $kUnsplashAccessKey'};
 
   void getSearchImage() async {
-    if (appCredentials == null) {
-      throw 'Please provide a credentials file as the first and only argument.';
+    final uri = Uri.https('api.unsplash.com', '/search/photos', {
+      'query': imageSearch,
+      'per_page': '10',
+    });
+    final response = await http.get(uri, headers: _authHeaders);
+    if (response.statusCode != 200) {
+      _showError('Search failed (${response.statusCode})');
+      return;
     }
 
-    // Create a client.
-    final client = UnsplashClient(
-      settings: ClientSettings(credentials: appCredentials),
-    );
-
-    listImages.clear();
-
-    final photos = await client.search.photos(imageSearch).goAndGet();
-    for (var photo in Iterable.castFrom(photos.results)) {
-      listImages.add(photo.urls.regular);
-    }
+    final results = (jsonDecode(response.body)['results'] as List);
 
     setState(() {
-      listImages = listImages;
+      listImages = [for (final photo in results) photo['urls']['regular']];
       hasSearched = true;
     });
   }
 
   void getRandomImage() async {
-    if (appCredentials == null) {
-      throw 'Please provide a credentials file as the first and only argument.';
+    final uri = Uri.https('api.unsplash.com', '/photos/random', {
+      'count': '10',
+    });
+    final response = await http.get(uri, headers: _authHeaders);
+    if (response.statusCode != 200) {
+      _showError('Could not load random images (${response.statusCode})');
+      return;
     }
 
-    // Create a client.
-    final client = UnsplashClient(
-      settings: ClientSettings(credentials: appCredentials),
-    );
-
-    // Fetch 5 random photos by calling `goAndGet` to execute the [Request]
-    // returned from `random` and throw an exception if the [Response] is not ok.
-    final photos = await client.photos.random(count: 10).goAndGet();
-
-    listImages.clear();
-
-    for (var element in photos) {
-      listImages.add(element.urls.regular);
-    }
+    final results = (jsonDecode(response.body) as List);
 
     setState(() {
-      listImages = listImages;
+      listImages = [for (final photo in results) photo['urls']['regular']];
       hasSearched = true;
     });
   }
 
-  AppCredentials? loadAppCredentials() {
-    return const AppCredentials(
-      accessKey: kUnsplashAccessKey,
-      secretKey: kUnsplashSecretKey,
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
     );
   }
 
@@ -227,11 +211,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                   String fileName = path.basename(Uri.parse(url).path);
                                   File file = File(path.join(docDir.path, '$fileName.jpg'));
                                   await file.writeAsBytes(response.bodyBytes);
-                                  // ignore: use_build_context_synchronously
+                                  if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(content: Text('Image saved in the Downloads folder')),
                                   );
-                                  // ignore: use_build_context_synchronously
                                   showDialog(
                                       context: context,
                                       builder: (BuildContext context) =>
